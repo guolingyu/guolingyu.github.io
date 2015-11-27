@@ -49,6 +49,64 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2015-11-27T08:04:44.000Z"><a href="/2015/11/27/git-branch-management/">2015-11-27</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2015/11/27/git-branch-management/">开发流程和分支管理</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="简介">简介</h1><p>  这是我们团队自己定的开发流程和 Git 分支规范。其实在开发流程中，并没有一个最好的规范或者说实践，但是因为开发涉及到团队协作，因此必须有一些规范才能让合作更加默契。</p>
+<h1 id="管理工具">管理工具</h1><p>  我们团队使用 Git 工具来管理代码、发布和持续集成,也用来管理部分项目私密的文档。<br>  关于 Git 的基础知识，可以参考：</p>
+<ul>
+<li><a href="https://guides.github.com/" target="_blank" rel="external">GitHub 的教程</a></li>
+<li><p><a href="http://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000" target="_blank" rel="external">廖雪峰的Git教程</a></p>
+<p>代码主要放在 <a href="https://github.com/aotumanlady" target="_blank" rel="external">GitHub</a> 上。我们并不限制开发人员使用特定的 Git 工具，但是我们仍然建议开发人员使用 Shell（命令行） 或者 <a href="https://www.sourcetreeapp.com/" target="_blank" rel="external">SourceTree</a>（图形工具）来管理代码。  </p>
+</li>
+</ul>
+<h1 id="加入组织">加入组织</h1><p>  我们在 GitHub 上建立了一个叫做 aotumanlady 的组，首先需要将自己的 GitHub 账号告知管理员，由管理员发送邀请，然后访问 <a href="https://github.com/aotumanlady" target="_blank" rel="external">aotumanlady 的主页</a> 就可以接受邀请并加入了。</p>
+<h1 id="添加工程">添加工程</h1><p>  加入组织后，就可以看到组织的 repository 了。之后开发人员需要按照 GitHub 的流程来参与项目的开发，步骤如下：</p>
+<ol>
+<li>Fork 组织的 Repository</li>
+<li>新开一个 Branch，开发项目的功能代码</li>
+<li>开发完成后，合并到 develop 分支，然后提交 Pull Request 给项目的负责人</li>
+<li>负责人需要对 PR 的代码进行 Code Review， 不合格的代码需要修改， 修改合格以后 Merge 到主 repository 中</li>
+<li>在 develop 版本中进行测试</li>
+<li>测试完成后，合并到 master 分支，然后打 Tag 发布</li>
+</ol>
+<h1 id="Branch_和_Tag">Branch 和 Tag</h1><h2 id="Branch">Branch</h2><p>  在组织的项目中，通常都包括两个 branch：master 和 develop，<br>  master 是正常的用于发布的代码，这个分支应该基本稳定，并保持整洁<br>  develop 是主要的开发分支，包括最新的代码，也是所有的人完成一个版本后，进行 merge 的原代码<br>  假如开发人员要开发一个功能，应该首先在自己的工程的 develop 分支中，开一个新的分支，分知名可以是 function1， 然后进行开发，开发完成后，合并到自己工程的 develop 分支里，然后提交 develop 分支的 Pull Request。</p>
+<h2 id="Tag">Tag</h2><p>  对应每个发布版本的 tag。SDK 和应用程序的 tag 遵照 &lt;major&gt;.&lt;minor&gt;.&lt;patch&gt; 的命名，如 2.5.1</p>
+<h1 id="发布新版本流程">发布新版本流程</h1><ol>
+<li>首先确认所有的开发代码都已经合并到组织的 Repository 里的 develop 分支</li>
+<li>然后对 develop 分支进行测试</li>
+<li>测试成功以后，将 develop 分支合并到 master 分支</li>
+<li>在 master 分支上建立对应版本的 tag， 利用持续集成工具上线</li>
+</ol>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2015-11-24T08:45:43.000Z"><a href="/2015/11/24/dev-tool-prepare/">2015-11-24</a></time>
       
       
