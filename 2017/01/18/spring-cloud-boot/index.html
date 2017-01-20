@@ -1,0 +1,271 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Spring Cloud 微服务实战（1）- 从Spring Boot开始 | 郭大侠的BLOG</title>
+  <meta name="author" content="郭大侠">
+  
+  <meta name="description" content="最近微服务的概念可以说是在 Java 架构领域非常火，经常看到一些论坛或者网站组织人员交流微服务的架构经验学习活动。Spring Cloud 可以说是 Java 领域对于践行微服务概念的一个指导框架，基于尝鲜的习惯，我准备试用并记录一下实验的过程，只代表个人观点，欢迎指正。
+首先是 Spring C">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Spring Cloud 微服务实战（1）- 从Spring Boot开始"/>
+  <meta property="og:site_name" content="郭大侠的BLOG"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="郭大侠的BLOG" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">郭大侠的BLOG</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2017-01-18T08:56:52.000Z"><a href="/2017/01/18/spring-cloud-boot/">2017-01-18</a></time>
+      
+      
+  
+    <h1 class="title">Spring Cloud 微服务实战（1）- 从Spring Boot开始</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>最近微服务的概念可以说是在 Java 架构领域非常火，经常看到一些论坛或者网站组织人员交流微服务的架构经验学习活动。Spring Cloud 可以说是 Java 领域对于践行微服务概念的一个指导框架，基于尝鲜的习惯，我准备试用并记录一下实验的过程，只代表个人观点，欢迎指正。</p>
+<p>首先是 Spring Cloud 作为微服务的治理框架，和国内老牌的分布式方案 Dubbo 相比，该怎么选型。老实说，在框架选择上我是有一些‘媚外’情节的。当然阿里近几年对于开源世界的贡献有目共睹，但是做开源纯粹只为绩效考核也是常有的事情，经常是考核以后就不维护了，所以在这两个里我选 Spring Cloud。当然我们还是可以从另外的角度比较</p>
+<h3 id="1-涵盖的系统功能">1.涵盖的系统功能</h3><p>Dubbo 主要是服务调用，服务注册和发现，但是 Spring Cloud 比较全，还包括网关服务、分布式配置、消息总线、熔断器等。Dubbo 需要用其他开源项目来结合使用</p>
+<h3 id="2-RPC_和_HTTP">2.RPC 和 HTTP</h3><p>Dubbo 虽然可以支持多种协议，不过从诞生开始，就是以 RPC 为主。RPC有传输效率较高的优点，但是也有一些劣势，包括：</p>
+<ul>
+<li>RPC的协议要求比较严，参数的加减都会影响服务</li>
+<li>出现问题时要解决的难度比较大</li>
+</ul>
+<h2 id="从_Spring_Boot_开始">从 Spring Boot 开始</h2><p>如果要用 Spring Cloud，首先我们先试试 Spring Boot。Spring Boot 的作用在于创建和启动新的基于 Spring 框架的项目，并且项目内置 Tomcat 或者 jetty，可以通过 jar 包的方式运行。非常适合作为微服务的基础实现，跟容器服务整合更是轻松愉快。Spring Boot 包含的特性如下：</p>
+<ul>
+<li>创建可以独立运行的 Spring 应用</li>
+<li>直接嵌入 Tomcat 或 Jetty 服务器，不需要部署 WAR 文件</li>
+<li>提供推荐的基础 POM 文件来简化 Apache Maven 配置</li>
+<li>尽可能的根据项目依赖来自动配置 Spring 框架，可以不适用 XML 文件</li>
+</ul>
+<p>从最简单的代码来展示一下 Spring Boot 的效果。首先创建一个基本的 maven 项目，然后看一下 POM：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="title">parent</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-boot-starter-parent<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="title">version</span>&gt;</span>1.4.3.RELEASE<span class="tag">&lt;/<span class="title">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">parent</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="title">dependencies</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-boot-starter-web<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="title">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">dependencies</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="title">build</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">plugins</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">plugin</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">executions</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="title">execution</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="title">goals</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="title">goal</span>&gt;</span>repackage<span class="tag">&lt;/<span class="title">goal</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="title">goals</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="title">execution</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="title">executions</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="title">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="title">plugins</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p><parent> 里配置的是项目的基础部分，如果 Spring Boot 只是一个 module，则这一段可以配置到项目的根 module 中，spring-boot-starter-parent 主要是包括了一些相关依赖库的版本配置，Java 代码版本等基础信息。建议使用。</parent></p>
+<p>spring-boot-starter-web 是主要的依赖项。spring-boot-starter-web 默认使用 tomcat 来构建 web 运用。当使用 Maven 命令“mvn dependency:tree”来查看项目实际的依赖时，会发现其中包含了 Spring MVC 框架、SLF4J、Jackson、Hibernate Validator 和 Tomcat 等依赖。这实际上 Spring 推荐的 Web 应用中使用的开源库的组合。除了这个 POM 文件之外，Spring Boot 还提供了其他类似的 POM 文件。所有这些基础 POM 依赖都在“org.springframework.boot”组中。</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spring-boot-starter</td>
+<td>核心 POM，包含自动配置支持、日志库和对 YAML 配置文件的支持。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-amqp</td>
+<td>通过 spring-rabbit 支持 AMQP。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-aop</td>
+<td>包含 spring-aop 和 AspectJ 来支持面向切面编程（AOP）。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-batch</td>
+<td>支持 Spring Batch，包含 HSQLDB。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-data-jpa</td>
+<td>包含 spring-data-jpa、spring-orm 和 Hibernate 来支持 JPA。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-data-mongodb</td>
+<td>包含 spring-data-mongodb 来支持 MongoDB。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-data-rest</td>
+<td>通过 spring-data-rest-webmvc 支持以 REST 方式暴露 Spring Data 仓库。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-jdbc</td>
+<td>支持使用 JDBC 访问数据库。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-security</td>
+<td>包含 spring-security。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-test</td>
+<td>包含常用的测试所需的依赖，如 JUnit、Hamcrest、Mockito 和 spring-test 等。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-velocity</td>
+<td>支持使用 Velocity 作为模板引擎。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-web</td>
+<td>支持 Web 应用开发，包含 Tomcat 和 spring-mvc。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-websocket</td>
+<td>支持使用 Tomcat 开发 WebSocket 应用。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-ws</td>
+<td>支持 Spring Web Services。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-actuator</td>
+<td>添加适用于生产环境的功能，如性能指标和监测等功能。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-remote-shell</td>
+<td>添加远程 SSH 支持。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-jetty</td>
+<td>使用 Jetty 而不是默认的 Tomcat 作为应用服务器。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-log4j</td>
+<td>添加 Log4j 的支持。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-logging</td>
+<td>使用 Spring Boot 默认的日志框架 Logback。</td>
+</tr>
+<tr>
+<td>spring-boot-starter-tomcat</td>
+<td>使用 Spring Boot 默认的 Tomcat 作为应用服务器。</td>
+</tr>
+</tbody>
+</table>
+<p>可以发现，Spring Boot 框架中，使用依赖来管理项目中使用到的库和配置，从而减少每次创建新的项目的开销，具有非常大的便捷性。</p>
+<p>spring-boot-maven-plugin 用于将 Spring Boot 项目打包成可执行的 jar 包，使用 mvn package 命令打包后得到的 jar 包，可以直接使用 java -jar xxx.jar 的方式运行，可以说非常方便。</p>
+<p>然后我们开始写两个类来实现基本的功能：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="annotation">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SampleController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="annotation">@RequestMapping</span>(<span class="string">"/"</span>)</span><br><span class="line">    <span class="annotation">@ResponseBody</span></span><br><span class="line">    <span class="function">String <span class="title">home</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Hello World!"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>SampleController 是最基础的 SpringMVC 构件，由 @Controller 这样的注解来表示这个 API。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="annotation">@SpringBootApplication</span></span><br><span class="line"><span class="annotation">@EnableAutoConfiguration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Application</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        SpringApplication.run(Application.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而在另一个 Application 类中，出现了两个 Spring Boot 新出的注解形式：</p>
+<p>@SpringBootApplication 表示这是一个 SpringBoot 的 Application 程序，使用该程序的类，会作为整个工程的启动类，并以 main 函数开始运行。通过刚才提到的 maven 插件 spring-boot-maven-plugin 配置成为整个 jar 包的启动类。 而 main 函数中，应该使用 SpringApplication.run() 这个方法来启动运行整个 web 容器。</p>
+<p>@EnableAutoConfiguration 是 Spring Boot 的另外一个革新点，这是一个可以自动完成 Spring 配置框架的功能，从而省略掉以往的 application-xxx.xml 这样的配置文件。 实现自动配置主要是靠项目的依赖项来实现，在刚才配置的POM文件里，Spring Boot 通过 spring-boot-starter-web 来识别项目应该是一个 Tomcat 和 SpringMVC 的项目，所以 Spring 启动了一个 Tomcat 并尝试自动配置相关的 XML 等配置。</p>
+<p>之后通过使用</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn spring-boot:run</span><br></pre></td></tr></table></figure>
+<p>或者<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar target/xxx.jar</span><br></pre></td></tr></table></figure></p>
+<p>之后可以顺利访问启动的服务了。更多的可以参考</p>
+<p><a href="http://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference/htmlsingle/" target="_blank" rel="external">Spring Boot Reference Guide</a></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/Spring-Cloud/">Spring-Cloud</a>
+  </div>
+
+        
+  <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	<a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" src="http://v3.jiathis.com/code_mini/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <!-- UY BEGIN -->
+  <div id="uyan_frame"></div>
+  <script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js"></script>
+  <!-- UY END -->
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:yoursite.com">
+  </form>
+</div>
+
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Spring-Cloud/">Spring-Cloud</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 郭大侠
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
