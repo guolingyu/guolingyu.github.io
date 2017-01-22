@@ -1,0 +1,192 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Spring Cloud 微服务实战（2）- 用 Netflix Eureka 实现服务发现和注册 | 郭大侠的BLOG</title>
+  <meta name="author" content="郭大侠">
+  
+  <meta name="description" content="在调用微服务时，无论用什么办法，调用方需要知道服务方的 IP 和端口。如下图所示：
+
+而 Eureka 就是负责管理一个服务方的 IP 和端口列表。它的工作流程如下：
+
+所有的服务方通过 Eureka Client 去跟 Eureka 服务器通讯，将自己的服务 IP 和端口进行注册，同时 Eurek">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="Spring Cloud 微服务实战（2）- 用 Netflix Eureka 实现服务发现和注册"/>
+  <meta property="og:site_name" content="郭大侠的BLOG"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="郭大侠的BLOG" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">郭大侠的BLOG</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2017-01-20T09:22:55.000Z"><a href="/2017/01/20/spring-cloud-eureka/">2017-01-20</a></time>
+      
+      
+  
+    <h1 class="title">Spring Cloud 微服务实战（2）- 用 Netflix Eureka 实现服务发现和注册</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>在调用微服务时，无论用什么办法，调用方需要知道服务方的 IP 和端口。如下图所示：</p>
+<p><img src="http://ok09azpxo.bkt.clouddn.com/20160419111629615.png" alt="服务发现"></p>
+<p>而 Eureka 就是负责管理一个服务方的 IP 和端口列表。它的工作流程如下：</p>
+<p><img src="http://ok09azpxo.bkt.clouddn.com/eureka_architecture.png" alt="Eureka"></p>
+<p>所有的服务方通过 Eureka Client 去跟 Eureka 服务器通讯，将自己的服务 IP 和端口进行注册，同时 Eureka Client 还具有一个心跳的逻辑，在注册后保持心跳。而服务的消费方通过跟 Eureka 服务器提供的 Rest API 获取到服务提供方的信息后，由消费方自行进行服务调用。Eureka Client 内部实现了一个简单的客户端负载均衡机制，可以通过 Round Robin 算法进行负载均衡。</p>
+<h2 id="相比_ZooKeeper_的分析">相比 ZooKeeper 的分析</h2><p>讲到服务发现，就不得不提到 ZK，ZooKeeper 可以通过管理微服务各个服务提供方的 IP 和端口配置文件，和监听各个服务的状态来修正服务注册表。事实上，国内应用很广的 Dubbo 框架就使用了 ZooKeeper 来管理服务。 ZooKeeper 毋庸置疑是一个非常强大的应用，但是在微服务注册和发现上，它并不能算是一个好选择，理由包括：</p>
+<ul>
+<li>根据 CAP 定理(C- 数据一致性;A-服务可用性;P-服务对网络分区故障的容错性，这三个特性在任何分布式系统中不能同时满足，最多同时满足两个); ZooKeeper 是基于 CP 来构建的，即任何时刻对 ZooKeeper 的访问请求能得到一致的数据结果，同时系统对网络分割具备容错性，但是它不能保证每次服务请求的可用性。这就导致在网络间歇性无法访问或者是出现网络分割问题时，ZooKeeper 将剔除所有节点并保证一致，同时返回一个空的服务列表给服务消费方，这甚至比返回一个5分钟以前的服务列表更让人无法接受。</li>
+<li>维护 ZooKeeper 是一个非常复杂的工作，这些困难不仅仅包括 ZooKeeper 本身的集群运维复杂度，还包括所有服务调用方在写代码的时候都要遇到的 ZooKeeper 客户端和监听事件的编写上。</li>
+</ul>
+<h1 id="部署_Eureka_服务">部署 Eureka 服务</h1><p>Eureka 包括两个部分：</p>
+<ul>
+<li>Eureka Server 用于服务注册和发现</li>
+<li>Eureka Client 同时用于服务提供方注册服务和服务消费方获取服务注册信息的 Eureka 客户端</li>
+</ul>
+<p>Eureka Server 比较简单，因为基本没啥可以配的，直接用官方的代码或者 docker 服务都可以，自己写一个就是几行注释的事情。<br>首先是 POM 里的设置：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 根Module里的预配置 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="title">parent</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-boot-starter-parent<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">version</span>&gt;</span>1.4.3.RELEASE<span class="tag">&lt;/<span class="title">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">parent</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 根Module依赖管理 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="title">dependencyManagement</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">dependencies</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-cloud-netflix<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">version</span>&gt;</span>1.2.4.RELEASE<span class="tag">&lt;/<span class="title">version</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="title">type</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="title">scope</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="title">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="title">dependencies</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">dependencyManagement</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 主要的配置 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="title">dependencies</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-cloud-starter-eureka-server<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="title">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">dependencies</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 打包的配置 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="title">build</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">plugins</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">plugin</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">executions</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="title">execution</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;<span class="title">goals</span>&gt;</span></span><br><span class="line">                        <span class="tag">&lt;<span class="title">goal</span>&gt;</span>repackage<span class="tag">&lt;/<span class="title">goal</span>&gt;</span></span><br><span class="line">                    <span class="tag">&lt;/<span class="title">goals</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;/<span class="title">execution</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="title">executions</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="title">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="title">plugins</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>然后需要编写一个配置文件 application.yml。主要用于标示 Eureka 运行的端口号（也可以在运行时指定），同时也设置了将自己注册成服务的配置：</p>
+<figure class="highlight axapta"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">server</span>:</span><br><span class="line">  port: <span class="number">8761</span></span><br><span class="line"></span><br><span class="line">eureka:</span><br><span class="line">  <span class="keyword">client</span>:</span><br><span class="line">    registerWithEureka: <span class="keyword">false</span></span><br><span class="line">    fetchRegistry: <span class="keyword">false</span></span><br><span class="line">    serviceUrl:</span><br><span class="line">      defaultZone: http:<span class="comment">//localhost:$&#123;server.port&#125;/eureka/</span></span><br><span class="line">  <span class="keyword">server</span>:</span><br><span class="line">    waitTimeInMsWhenSyncEmpty: <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>跟上一篇文章一样，mvn pakage 以后，运行 java -jar xxx.jar 后，可以在 8761 端口看到 Eureka 的 Web 界面：</p>
+<p><img src="http://ok09azpxo.bkt.clouddn.com/20170122155653.png" alt="web界面"></p>
+<p>目前还没有任何服务注册。之后试试看怎么注册一个服务上去。翻出上一篇文章里的代码，我们将 SampleController 里的服务注册成为一个可以调用的服务。</p>
+<p>首先是在 POM 里加入运行时需要的依赖，上一个项目还只是一个 Spring Boot 项目</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 根 Module 加入 Spring Cloud 的依赖管理 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="title">dependencyManagement</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">dependencies</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="title">dependency</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-cloud-netflix<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">version</span>&gt;</span>1.2.4.RELEASE<span class="tag">&lt;/<span class="title">version</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">type</span>&gt;</span>pom<span class="tag">&lt;/<span class="title">type</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="title">scope</span>&gt;</span>import<span class="tag">&lt;/<span class="title">scope</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="title">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="title">dependencies</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">dependencyManagement</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- module 内加入依赖 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="title">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.springframework.cloud<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>spring-cloud-starter-eureka<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="title">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>spring-cloud-netflix 是加入了 Spring Cloud 的基础配置，根据项目配置加入到根 module 中。</p>
+<p>spring-cloud-starter-eureka 用于支持 Eureka 服务。包括添加 Eureka Client 的依赖。</p>
+<p>然后在代码中加入注释：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="annotation">@SpringBootApplication</span></span><br><span class="line"><span class="annotation">@EnableAutoConfiguration</span></span><br><span class="line"><span class="annotation">@EnableEurekaClient</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Application</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        SpringApplication.run(Application.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>@EnableEurekaClient 表示启动 Eureka Client 并尝试进行服务注册。</p>
+<p>之后需要在服务提供方的代码里，配置 Eureka 的服务器地址和端口，多谢一个 application.yml 进行配置</p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">server:</span></span><br><span class="line"><span class="label">  port:</span> <span class="number">8070</span></span><br><span class="line"><span class="string">spring:</span></span><br><span class="line"><span class="label">  application:</span></span><br><span class="line"><span class="label">    name:</span> server-<span class="number">01</span></span><br><span class="line"><span class="string">eureka:</span></span><br><span class="line"><span class="label">  client:</span></span><br><span class="line"><span class="label">    serviceUrl:</span></span><br><span class="line"><span class="label">      defaultZone:</span> <span class="string">http:</span><span class="comment">//localhost:8761/eureka/</span></span><br><span class="line"><span class="label">  instance:</span></span><br><span class="line"><span class="label">    metadataMap:</span></span><br><span class="line"><span class="label">      instanceId:</span> $&#123;spring.application.name&#125;:$&#123;spring.application.<span class="string">instance_id:</span>$&#123;random.value&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>server.port 表示服务的启动端口，可以是在运行时进行变更来启动多个实例</p>
+<p>spring.application.name 表示服务的名字，同一个服务的多个实例，应该保证服务名称是一致的。否则会被作为两个服务。</p>
+<p>eureka.client.serviceUrl.defaultZone 表示 Eureka Server 的地址，如果 Eureka Server 有多个，用逗号分隔。例如：</p>
+<figure class="highlight pf"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">eureka.client.serviceUrl.<span class="keyword">default</span>Zone=http://<span class="variable">&lt;peer1host&gt;</span>:<span class="variable">&lt;peer1port&gt;</span>/eureka,http://<span class="variable">&lt;peer2host&gt;</span>:<span class="variable">&lt;peer2port&gt;</span>/eureka</span><br></pre></td></tr></table></figure>
+<p><code>instanceId</code> 表示eureka instance 标识，需要唯一，如果不配置，多个节点最终只会有一个生效。</p>
+<p>配置好之后，通过 <code>java -jar xxx.jar</code> 运行可以在 Eureka 后台看到新增加的服务。</p>
+<p>然后再通过运行 <code>java -Dserver.port=8071 -jar xxx.jar</code> 可以启动第二个实例，同时在 Eureka 后台可以看到服务的实例数变成了两个<br><img src="http://ok09azpxo.bkt.clouddn.com/20170122170108.png" alt="2个服务"></p>
+<p>本文中的代码请参考 <a href="https://github.com/guolingyu/spring-cloud-demo/releases/tag/v1.1" target="_blank" rel="external">实例代码</a></p>
+<p>下一篇文章将解释如何调用 Eureka 上注册的服务。 </p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/Spring-Cloud/">Spring-Cloud</a>
+  </div>
+
+        
+  <!-- JiaThis Button BEGIN -->
+<div class="jiathis_style">
+	<a class="jiathis_button_qzone"></a>
+	<a class="jiathis_button_tsina"></a>
+	<a class="jiathis_button_tqq"></a>
+	<a class="jiathis_button_weixin"></a>
+	<a class="jiathis_button_renren"></a>
+	<a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	<a class="jiathis_counter_style"></a>
+</div>
+<script type="text/javascript" src="http://v3.jiathis.com/code_mini/jia.js" charset="utf-8"></script>
+<!-- JiaThis Button END -->
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<section id="comment">
+  <!-- UY BEGIN -->
+  <div id="uyan_frame"></div>
+  <script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js"></script>
+  <!-- UY END -->
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="搜尋">
+    <input type="hidden" name="q" value="site:yoursite.com">
+  </form>
+</div>
+
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">標籤</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Spring-Cloud/">Spring-Cloud</a><small>2</small></li>
+  
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2017 郭大侠
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
